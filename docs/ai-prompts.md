@@ -21,6 +21,9 @@ PostgreSQL expert. SELECT only, single statement, demo/app schemas, LIMIT 100, S
 
 ```
 AGENTAPI_KEY=ваш_ключ
+AGENTAPI_URL=https://api.agentapi.ru/v1/ai/chat/completions
 AGENTAPI_MODEL=deepseek/deepseek-v4-flash
 AI_PROVIDER=agentapi
 ```
+
+Важно: домен agentapi.ru — это сайт (SPA). API живёт на api.agentapi.ru.

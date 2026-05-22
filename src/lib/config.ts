@@ -7,7 +7,8 @@ export const config = {
   aiProvider: process.env.AI_PROVIDER ?? "mock",
   agentApiKey: process.env.AGENTAPI_KEY ?? "",
   agentApiUrl:
-    process.env.AGENTAPI_URL ?? "https://agentapi.ru/v1/chat/completions",
+    process.env.AGENTAPI_URL ??
+    "https://api.agentapi.ru/v1/ai/chat/completions",
   agentApiModel:
     process.env.AGENTAPI_MODEL ?? "deepseek/deepseek-v4-flash",
 };

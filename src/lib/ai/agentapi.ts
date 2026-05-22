@@ -16,6 +16,57 @@ export function isAgentApiConfigured() {
   return Boolean(config.agentApiKey);
 }
 
+function resolveAgentApiUrl() {
+  const url = config.agentApiUrl.trim();
+  if (url.includes("agentapi.ru/v1/chat/completions") && !url.includes("api.agentapi.ru")) {
+    return "https://api.agentapi.ru/v1/ai/chat/completions";
+  }
+  return url;
+}
+
+async function parseAgentApiResponse(response: Response): Promise<AgentApiResult | { ok: true; content: string }> {
+  const contentType = response.headers.get("content-type") ?? "";
+  const text = await response.text();
+
+  if (
+    text.trimStart().startsWith("<!DOCTYPE") ||
+    text.trimStart().startsWith("<html") ||
+    contentType.includes("text/html")
+  ) {
+    return {
+      sql: null,
+      source: "fallback",
+      message:
+        "AgentAPI вернул HTML вместо JSON. Укажите AGENTAPI_URL=https://api.agentapi.ru/v1/ai/chat/completions (не agentapi.ru).",
+      raw: text.slice(0, 200),
+    };
+  }
+
+  let data: { choices?: { message?: { content?: string } }[]; message?: string; error?: string };
+  try {
+    data = JSON.parse(text) as typeof data;
+  } catch {
+    return {
+      sql: null,
+      source: "fallback",
+      message: `AgentAPI: невалидный JSON (HTTP ${response.status})`,
+      raw: text.slice(0, 300),
+    };
+  }
+
+  if (!response.ok) {
+    const errMsg = data.message ?? data.error ?? text.slice(0, 200);
+    return {
+      sql: null,
+      source: "fallback",
+      message: `Ошибка AgentAPI (${response.status}): ${errMsg}`,
+    };
+  }
+
+  const content = data.choices?.[0]?.message?.content ?? "";
+  return { ok: true, content };
+}
+
 export async function generateSqlViaAgentApi(
   question: string,
   schemaText: string,
@@ -31,49 +82,40 @@ export async function generateSqlViaAgentApi(
   }
 
   const messages = buildAgentApiMessages(schemaText, question, lang);
+  const url = resolveAgentApiUrl();
 
   try {
-    const response = await fetch(config.agentApiUrl, {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
-        "x-api-key": config.agentApiKey,
+        "x-api-key": config.agentApiKey.trim(),
         "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify({
         model: config.agentApiModel,
         messages,
-        temperature: 0.1,
-        max_tokens: 1024,
       }),
       signal: AbortSignal.timeout(25000),
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      return {
-        sql: null,
-        source: "fallback",
-        message: `Ошибка AgentAPI (${response.status}): ${errText.slice(0, 200)}`,
-      };
+    const parsed = await parseAgentApiResponse(response);
+    if (!("ok" in parsed && parsed.ok)) {
+      return parsed as AgentApiResult;
     }
 
-    const data = (await response.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    const content = data.choices?.[0]?.message?.content ?? "";
-    const sql = extractSqlFromLlmResponse(content);
-
+    const sql = extractSqlFromLlmResponse(parsed.content);
     if (!sql) {
       return {
         sql: null,
         source: "fallback",
         message:
           "ИИ не смог построить корректный SQL. Попробуйте уточнить запрос или отредактируйте SQL вручную.",
-        raw: content.slice(0, 500),
+        raw: parsed.content.slice(0, 500),
       };
     }
 
-    return { sql, source: "agentapi", raw: content.slice(0, 300) };
+    return { sql, source: "agentapi", raw: parsed.content.slice(0, 300) };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Сбой сети AgentAPI";
     return {
