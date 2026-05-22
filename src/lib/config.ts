@@ -5,4 +5,9 @@ export const config = {
   encryptionKey: process.env.ENCRYPTION_KEY ?? "",
   seedSecret: process.env.SEED_SECRET ?? "dev-seed",
   aiProvider: process.env.AI_PROVIDER ?? "mock",
+  agentApiKey: process.env.AGENTAPI_KEY ?? "",
+  agentApiUrl:
+    process.env.AGENTAPI_URL ?? "https://agentapi.ru/v1/chat/completions",
+  agentApiModel:
+    process.env.AGENTAPI_MODEL ?? "deepseek/deepseek-v4-flash",
 };

@@ -12,7 +12,7 @@
 | 2 | Подключение БД | SELECT-only, `.env.example`, [scripts/seed-demo.sql](scripts/seed-demo.sql) |
 | 3 | API SQL | `POST /api/query` — [docs/api-sql.md](docs/api-sql.md) |
 | 4 | Метаданные | `GET /api/schema` — [docs/schema-prompt-example.md](docs/schema-prompt-example.md) |
-| 5 | LLM | Mock golden RU/EN — `POST /api/ai/generate-sql` |
+| 5 | LLM | Mock + **AgentAPI** (переключатель на `/analyze`) — [docs/ai-prompts.md](docs/ai-prompts.md) |
 | 6 | Валидация | `src/lib/sql-validator.ts` |
 | 7 | UI подключения | `/connect` (пароль только на сервере) |
 | 8 | Таблица + график | Recharts + [public/sample-result.json](public/sample-result.json) |

@@ -24,10 +24,4 @@ export function generateSqlFromQuestion(question: string): MockLlmResult {
   };
 }
 
-export function buildPrompt(schemaText: string, question: string, lang: "ru" | "en") {
-  const header =
-    lang === "ru"
-      ? "Ты генератор SQL. Ответь ТОЛЬКО одним SELECT для PostgreSQL."
-      : "You are an SQL generator. Reply with ONE SELECT for PostgreSQL only.";
-  return `${header}\n\nSchema:\n${schemaText}\n\nQuestion:\n${question}`;
-}
+export { buildPromptPreview as buildPrompt } from "./prompts";
